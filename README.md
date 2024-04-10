@@ -12,14 +12,18 @@ Start the server by specifying the desired port as an argument. If no port is sp
 
 ```
 python SimpleExfil.py 8000
-
 ```
 
 To upload a file, use `curl` from the command line, PowerShell, or any suitable HTTP client. Example for uploading `example.txt`:
 
 ```
-curl -F "file=@example.txt" http://localhost:8000
+curl -F "file=@example.txt" http://127.0.0.1:8000
+```
+Note that this only works with actual `curl`, so this command might not work in PowerShell.
 
+To upload a file using PowerShell you can use the following (may not be very reliable):
+```
+(New-Object System.Net.WebClient).UploadFile("http://127.0.0.1:8000", "C:\tmp\example.txt")
 ```
 
 Server can also be accessed on the browser for a classic upload UI.
