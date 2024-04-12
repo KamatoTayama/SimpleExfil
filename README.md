@@ -1,4 +1,4 @@
-# SimpleExfil
+# Yeetr - yeet your files
 
 This server accepts and stores files sent through HTTP POST requests, ideal for operations requiring file uploads from compromised machines or remote systems. It's lightweight, easy to deploy, and listens on a customizable port.
 
