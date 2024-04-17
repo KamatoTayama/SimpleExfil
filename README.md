@@ -1,6 +1,6 @@
-# Yeetr
+# SimpleExfil
 
-Yeetr lets you yeet your files. This server accepts and stores files sent through HTTP POST requests, ideal for operations requiring file uploads from compromised machines or remote systems. It's lightweight, easy to deploy, and listens on a customizable port.
+SimpleExfil lets you exfiltrate your files. This server accepts and stores files sent through HTTP POST requests, ideal for operations requiring file uploads from compromised machines or remote systems. It's lightweight, easy to deploy, and listens on a customizable port.
 
 ## Requirements
 
@@ -11,7 +11,7 @@ Yeetr lets you yeet your files. This server accepts and stores files sent throug
 Start the server by specifying the desired port as an argument. If no port is specified, it defaults to 8000.
 
 ```
-python yeetr.py 8000
+python simpleexfil.py 8000
 ```
 
 To upload a file, use `curl` from the command line, PowerShell, or any suitable HTTP client. Example for uploading `example.txt`:
