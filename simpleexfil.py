@@ -3,10 +3,16 @@ import socketserver
 import os
 import cgi
 import sys
+import logging
 
 DEFAULT_PORT = 8000
 
 port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 class ServerHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -35,10 +41,24 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
             headers=self.headers,
             environ={'REQUEST_METHOD': 'POST'}
         )
-        filename = form['file'].filename
-        file_data = form['file'].file.read()
-        with open(filename, 'wb') as f:
-            f.write(file_data)
+
+        try:
+            filename = form['file'].filename
+            file_data = form['file'].file.read()
+        except Exception as e:
+            logging.error("Failed to read uploaded file: %s", e)
+            self.send_error(400, "Invalid upload")
+            return
+
+        logging.info("Upload attempt from %s for %s", self.client_address[0], filename)
+
+        try:
+            with open(filename, 'wb') as f:
+                f.write(file_data)
+        except Exception as e:
+            logging.error("Failed to save %s: %s", filename, e)
+            self.send_error(500, "Failed to save file")
+            return
 
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
