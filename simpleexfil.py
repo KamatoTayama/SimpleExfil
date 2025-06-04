@@ -35,9 +35,17 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
             headers=self.headers,
             environ={'REQUEST_METHOD': 'POST'}
         )
-        filename = form['file'].filename
+        filename = os.path.basename(form['file'].filename)
         file_data = form['file'].file.read()
-        with open(filename, 'wb') as f:
+
+        base, ext = os.path.splitext(filename)
+        target = filename
+        counter = 1
+        while os.path.exists(target):
+            target = f"{base}_{counter}{ext}"
+            counter += 1
+
+        with open(target, 'wb') as f:
             f.write(file_data)
 
         self.send_response(200)
