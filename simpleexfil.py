@@ -32,36 +32,6 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
-
-        form = cgi.FieldStorage(
-            fp=self.rfile,
-            headers=self.headers,
-            environ={'REQUEST_METHOD': 'POST'}
-        )
-
-        try:
-            filename = form['file'].filename
-            file_data = form['file'].file.read()
-        except Exception as e:
-            logging.error("Failed to read uploaded file: %s", e)
-            self.send_error(400, "Invalid upload")
-            return
-
-        logging.info("Upload attempt from %s for %s", self.client_address[0], filename)
-
-        try:
-            with open(filename, 'wb') as f:
-                f.write(file_data)
-        except Exception as e:
-            logging.error("Failed to save %s: %s", filename, e)
-            self.send_error(500, "Failed to save file")
-            return
-        filename = form['file'].filename
-        file_data = form['file'].file.read()
-        target_path = os.path.join(upload_dir, filename)
-        with open(target_path, 'wb') as f:
-            f.write(file_data)
-            
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length)
         ct = self.headers.get('Content-Type', '')
@@ -72,20 +42,40 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         filename = None
         file_data = None
         for part in msg.walk():
-            if part.get_content_disposition() == 'form-data':
-                if part.get_param('name', header='Content-Disposition') == 'file':
-                    filename = part.get_filename()
-                    file_data = part.get_payload(decode=True)
-                    break
+            if part.get_content_disposition() == 'form-data' and \
+               part.get_param('name', header='Content-Disposition') == 'file':
+                filename = part.get_filename()
+                file_data = part.get_payload(decode=True)
+                break
 
-        if filename and file_data is not None:
-            with open(filename, 'wb') as f:
+        if not filename or file_data is None:
+            logging.error('Failed to read uploaded file from %s', self.client_address[0])
+            self.send_error(400, 'Invalid upload')
+            return
+
+        logging.info('Upload attempt from %s for %s', self.client_address[0], filename)
+
+        base_name = os.path.basename(filename)
+        name_root, name_ext = os.path.splitext(base_name)
+        unique_name = base_name
+        counter = 1
+        while os.path.exists(os.path.join(upload_dir, unique_name)):
+            unique_name = f'{name_root}_{counter}{name_ext}'
+            counter += 1
+
+        target_path = os.path.join(upload_dir, unique_name)
+        try:
+            with open(target_path, 'wb') as f:
                 f.write(file_data)
+        except Exception as e:
+            logging.error('Failed to save %s: %s', target_path, e)
+            self.send_error(500, 'Failed to save file')
+            return
 
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(f"Uploaded {filename}\n".encode('utf-8'))
+        self.wfile.write(f'Uploaded {unique_name}\n'.encode('utf-8'))
 
 with socketserver.TCPServer(("", port), ServerHandler) as httpd:
     print(f"serving at port {port}")
