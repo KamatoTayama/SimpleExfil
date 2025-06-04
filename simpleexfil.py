@@ -1,11 +1,9 @@
 import http.server
 import socketserver
 import os
-from email import message_from_binary_file
-from email.policy import default
-from io import BytesIO
 import sys
 import logging
+from cgi import FieldStorage
 
 DEFAULT_PORT = 8000
 
@@ -32,21 +30,19 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        body = self.rfile.read(content_length)
-        ct = self.headers.get('Content-Type', '')
+        form = FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={'REQUEST_METHOD': 'POST'}
+        )
 
-        msg_bytes = b'Content-Type: ' + ct.encode() + b"\r\n\r\n" + body
-        msg = message_from_binary_file(BytesIO(msg_bytes), policy=default)
+        if 'file' not in form:
+            self.send_error(400, 'Invalid upload')
+            return
 
-        filename = None
-        file_data = None
-        for part in msg.walk():
-            if part.get_content_disposition() == 'form-data' and \
-               part.get_param('name', header='Content-Disposition') == 'file':
-                filename = part.get_filename()
-                file_data = part.get_payload(decode=True)
-                break
+        item = form['file']
+        filename = item.filename
+        file_data = item.file.read()
 
         if not filename or file_data is None:
             logging.error('Failed to read uploaded file from %s', self.client_address[0])
