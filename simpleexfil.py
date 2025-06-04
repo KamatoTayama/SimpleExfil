@@ -13,23 +13,9 @@ port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
 class ServerHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
-        html = '''
-        <html>
-        <head>
-        <title>Upload File</title>
-        </head>
-        <body>
-        <form enctype="multipart/form-data" method="post">
-        <input name="file" type="file"/>
-        <input type="submit" value="Upload"/>
-        </form>
-        </body>
-        </html>
-        '''
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(html.encode('utf-8'))
+        if self.path in ('/', '/index.html'):
+            self.path = '/static/index.html'
+        return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
         codex/switch-to-email.message_from_binary_file
