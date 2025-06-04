@@ -8,6 +8,14 @@ DEFAULT_PORT = 8000
 
 port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
 
+# Determine directory for uploaded files
+upload_dir = os.environ.get("UPLOAD_DIR", ".")
+if len(sys.argv) > 2:
+    upload_dir = sys.argv[2]
+
+# Ensure the directory exists
+os.makedirs(upload_dir, exist_ok=True)
+
 class ServerHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
@@ -37,7 +45,8 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         )
         filename = form['file'].filename
         file_data = form['file'].file.read()
-        with open(filename, 'wb') as f:
+        target_path = os.path.join(upload_dir, filename)
+        with open(target_path, 'wb') as f:
             f.write(file_data)
 
         self.send_response(200)
