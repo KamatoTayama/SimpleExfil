@@ -32,6 +32,7 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(html.encode('utf-8'))
 
     def do_POST(self):
+        codex/switch-to-email.message_from_binary_file
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length)
         ct = self.headers.get('Content-Type', '')
