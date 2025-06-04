@@ -27,3 +27,10 @@ To upload a file using PowerShell you can use the following (may not be very rel
 ```
 
 Server can also be accessed on the browser for a classic upload UI.
+
+## File Storage Behavior
+
+The server uses the base name of the uploaded file when saving to avoid
+directory traversal attacks. If a file with the requested name already
+exists, a numerical suffix is appended (e.g. `file.txt`, `file_1.txt`,
+`file_2.txt`, ...).
