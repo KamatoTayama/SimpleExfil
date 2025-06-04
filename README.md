@@ -30,3 +30,17 @@ To upload a file using PowerShell you can use the following (may not be very rel
 ```
 
 Server can also be accessed on the browser for a classic upload UI.
+
+### Enhanced Web UI
+
+This tool includes a drag-and-drop interface. After starting the
+server, open your browser and navigate to `http://127.0.0.1:8000/` to access the
+new UI. Drop a file onto the highlighted area or click to choose a file and it
+will be uploaded automatically.
+
+## File Storage Behavior
+
+The server uses the base name of the uploaded file when saving to avoid
+directory traversal attacks. If a file with the requested name already
+exists, a numerical suffix is appended (e.g. `file.txt`, `file_1.txt`,
+`file_2.txt`, ...).

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload File - Drag and Drop</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #dropzone {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      cursor: pointer;
+    }
+    #dropzone.hover {
+      border-color: #000;
+    }
+  </style>
+</head>
+<body>
+<h2>Upload File</h2>
+<div id="dropzone">Drag and drop a file here or click to select</div>
+<input type="file" id="fileinput" style="display:none" />
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileinput = document.getElementById('fileinput');
+
+dropzone.addEventListener('click', () => fileinput.click());
+
+dropzone.addEventListener('dragover', (ev) => {
+  ev.preventDefault();
+  dropzone.classList.add('hover');
+});
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('hover');
+});
+
+dropzone.addEventListener('drop', (ev) => {
+  ev.preventDefault();
+  dropzone.classList.remove('hover');
+  if (ev.dataTransfer.files.length) {
+    upload(ev.dataTransfer.files[0]);
+  }
+});
+
+fileinput.addEventListener('change', () => {
+  if (fileinput.files.length) {
+    upload(fileinput.files[0]);
+  }
+});
+
+function upload(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  fetch('/', { method: 'POST', body: formData })
+    .then(resp => resp.text())
+    .then(text => alert(text))
+    .catch(err => alert('Upload failed'));
+}
+</script>
+</body>
+</html>
