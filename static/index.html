@@ -187,8 +187,8 @@
 </head>
 <body>
 
-<!-- Login overlay -->
-<div id="login-overlay" class="hidden">
+<!-- Login overlay (shown by default; app unlocks only after password) -->
+<div id="login-overlay">
   <div class="login-box">
     <h1>SimpleExfil</h1>
     <p>Enter the server password to continue</p>
@@ -232,19 +232,37 @@ const statusEl = $("#status");
 const fileList = $("#file-list");
 const badge    = $("#file-count-badge");
 
+// Support reverse-proxy subpaths (e.g. https://host/exfil/) — absolute /api/... breaks auth.
+const BASE = (() => {
+  let p = window.location.pathname || "";
+  if (p.endsWith("/index.html")) p = p.slice(0, -"/index.html".length);
+  if (p.endsWith("/")) p = p.slice(0, -1);
+  return p; // "" at site root, or "/exfil" behind nginx
+})();
+const api = (path) => BASE + path;
+
 // ---- Auth flow ----
+function showLogin(msg) {
+  overlay.classList.remove("hidden");
+  app.classList.remove("visible");
+  if (msg) $("#login-error").textContent = msg;
+  $("#pw-input").focus();
+}
+
 async function checkAuth() {
+  // Always show the password gate when auth is configured.
+  // Do not auto-unlock from a session cookie — operator must enter the password each visit.
   try {
-    const res = await fetch("/api/check-auth");
+    const res = await fetch(api("/api/check-auth"), { credentials: "same-origin" });
     const data = await res.json();
-    if (!data.required || data.authenticated) {
+    if (!data.required) {
       showApp();
-    } else {
-      overlay.classList.remove("hidden");
-      $("#pw-input").focus();
+      return;
     }
+    showLogin();
   } catch {
-    showApp();
+    // Wrong upstream / HTML error page (common when /api hits nginx → SlopStrike): stay on login.
+    showLogin("Auth check failed — is this page served under /exfil/?");
   }
 }
 
@@ -254,8 +272,9 @@ $("#login-form").addEventListener("submit", async (e) => {
   const errEl = $("#login-error");
   errEl.textContent = "";
   try {
-    const res = await fetch("/api/auth", {
+    const res = await fetch(api("/api/auth"), {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: pw }),
     });
@@ -294,7 +313,7 @@ async function upload(file) {
   const fd = new FormData();
   fd.append("file", file);
   try {
-    const res = await fetch("/", { method: "POST", body: fd });
+    const res = await fetch(api("/"), { method: "POST", credentials: "same-origin", body: fd });
     const text = await res.text();
     if (res.ok) {
       showStatus(text.trim(), "success");
@@ -317,8 +336,11 @@ function showStatus(msg, type) {
 // ---- File listing ----
 async function loadFiles() {
   try {
-    const res = await fetch("/api/files");
-    if (!res.ok) return;
+    const res = await fetch(api("/api/files"), { credentials: "same-origin" });
+    if (!res.ok) {
+      if (res.status === 401) showLogin("Session expired — enter password again");
+      return;
+    }
     const files = await res.json();
     badge.textContent = files.length + " file" + (files.length !== 1 ? "s" : "");
     if (files.length === 0) {
@@ -329,7 +351,7 @@ async function loadFiles() {
       <div class="file-row">
         <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
         <span class="file-size">${esc(f.size_human)}</span>
-        <a class="file-dl" href="/download/${encodeURIComponent(f.name)}">Download</a>
+        <a class="file-dl" href="${api("/download/" + encodeURIComponent(f.name))}">Download</a>
       </div>
     `).join("");
   } catch { /* ignore */ }
