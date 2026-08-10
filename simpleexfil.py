@@ -123,6 +123,13 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
+    def end_headers(self):
+        # Avoid browsers caching an old UI that skips the password gate.
+        if self.path.endswith("index.html") or self.path in ("/", "/index.html", "/static/index.html"):
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+        super().end_headers()
+
     def do_GET(self):
         if self.path in ("/", "/index.html"):
             self.path = "/static/index.html"
