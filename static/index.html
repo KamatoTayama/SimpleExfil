@@ -261,8 +261,8 @@ async function checkAuth() {
     }
     showLogin();
   } catch {
-    // Wrong upstream / HTML error page (common when /api hits nginx → SlopStrike): stay on login.
-    showLogin("Auth check failed — is this page served under /exfil/?");
+    // Auth endpoint unreachable or returned non-JSON — stay on login.
+    showLogin("Auth check failed — check reverse-proxy path mapping.");
   }
 }
 
